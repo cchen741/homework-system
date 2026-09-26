@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作業管理系統</title>
+
+<style>
+body{
+    font-family: Microsoft JhengHei,sans-serif;
+    margin:20px;
+    background:#f4f6f9;
+}
+
+.container{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 2px 5px rgba(0,0,0,.1);
+}
+
+h2{
+    color:#0078d7;
+}
+
+input,textarea,button{
+    padding:8px;
+    margin:5px;
+}
+
+button{
+    cursor:pointer;
+    border:none;
+    background:#0078d7;
+    color:white;
+    border-radius:5px;
+}
+
+button:hover{
+    background:#005ea6;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+
+th,td{
+    border:1px solid #ccc;
+    padding:8px;
+    text-align:center;
+}
+
+.remind{
+    color:red;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<h1>📚 作業管理系統</h1>
+
+<div class="container">
+    <h2>1. 批次建立學生名單</h2>
+
+    <p>一行一位學生</p>
+
+    <textarea id="studentInput" rows="6" cols="40"></textarea><br>
+    <button onclick="importStudents()">匯入學生</button>
+
+    <ul id="studentList"></ul>
+</div>
+
+<div class="container">
+    <h2>2. 建立作業</h2>
+
+    <input type="text" id="assignmentName" placeholder="作業名稱">
+    <input type="date" id="dueDate">
+    <button onclick="createAssignment()">建立作業</button>
+
+    <ul id="assignmentList"></ul>
+</div>
+
+<div class="container">
+    <h2>3. 點名功能</h2>
+
+    <table id="attendanceTable">
+        <thead>
+            <tr>
+                <th>學生</th>
+                <th>出席</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="container">
+    <h2>4. 作業繳交管理</h2>
+
+    <table id="homeworkTable">
+        <thead>
+            <tr>
+                <th>學生</th>
+                <th>作業</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<div class="container">
+    <h2>5. 催繳名單</h2>
+
+    <button onclick="showReminder()">查詢未繳交</button>
+    <ul id="reminderList"></ul>
+</div>
+
+<script>
+
+let students =
+JSON.parse(localStorage.getItem("students")) || [];
+
+let assignments =
+JSON.parse(localStorage.getItem("assignments")) || [];
+
+let submissions =
+JSON.parse(localStorage.getItem("submissions")) || {};
+
+function saveData(){
+    localStorage.setItem(
+        "students",
+        JSON.stringify(students)
+    );
+
+    localStorage.setItem(
+        "assignments",
+        JSON.stringify(assignments)
+    );
+
+    localStorage.setItem(
+        "submissions",
+        JSON.stringify(submissions)
+    );
+}
+
+function importStudents(){
+
+    let names =
+    document.getElementById("studentInput")
+    .value
+    .split("\n")
+    .map(x=>x.trim())
+    .filter(x=>x!="");
+
+    students = names;
+
+    saveData();
+
+    renderStudents();
+    renderAttendance();
+    renderHomework();
+}
+
+function renderStudents(){
+
+    let ul =
+    document.getElementById("studentList");
+
+    ul.innerHTML="";
+
+    students.forEach(student=>{
+
+        let li=document.createElement("li");
+        li.innerText=student;
+
+        ul.appendChild(li);
+
+    });
+}
+
+function createAssignment(){
+
+    let name =
+    document.getElementById("assignmentName").value;
+
+    let due =
+    document.getElementById("dueDate").value;
+
+    if(!name) return;
+
+    assignments.push({
+        name,
+        due
+    });
+
+    saveData();
+
+    renderAssignments();
+    renderHomework();
+}
+
+function renderAssignments(){
+
+    let ul =
+    document.getElementById("assignmentList");
+
+    ul.innerHTML="";
+
+    assignments.forEach(a=>{
+
+        let li=document.createElement("li");
+
+        li.innerHTML=
+        `${a.name} (截止:${a.due})`;
+
+        ul.appendChild(li);
+    });
+}
+
+function renderAttendance(){
+
+    let tbody =
+    document.querySelector(
+    "#attendanceTable tbody");
+
+    tbody.innerHTML="";
+
+    students.forEach(student=>{
+
+        let tr=document.createElement("tr");
+
+        tr.innerHTML=`
+        <td>${student}</td>
+        <td>
+        <input type="checkbox">
+        </td>
+        `;
+
+        tbody.appendChild(tr);
+
+    });
+
+}
+
+function renderHomework(){
+
+    let tbody =
+    document.querySelector(
+    "#homeworkTable tbody");
+
+    tbody.innerHTML="";
+
+    students.forEach(student=>{
+
+        assignments.forEach(a=>{
+
+            let key =
+            student + "_" + a.name;
+
+            let status =
+            submissions[key] || false;
+
+            let tr=document.createElement("tr");
+
+            tr.innerHTML=`
+            <td>${student}</td>
+            <td>${a.name}</td>
+            <td>
+                <button onclick="
+                    toggleSubmission(
+                    '${student}',
+                    '${a.name}'
+                    )">
+                    ${status ?
+                    '已繳交' :
+                    '未繳交'}
+                </button>
+            </td>
+            `;
+
+            tbody.appendChild(tr);
+
+        });
+
+    });
+
+}
+
+function toggleSubmission(student,assignment){
+
+    let key=
+    student+"_"+assignment;
+
+    submissions[key]=
+    !submissions[key];
+
+    saveData();
+
+    renderHomework();
+}
+
+function showReminder(){
+
+    let ul=
+    document.getElementById(
+    "reminderList"
+    );
+
+    ul.innerHTML="";
+
+    students.forEach(student=>{
+
+        assignments.forEach(a=>{
+
+            let key=
+            student+"_"+a.name;
+
+            if(!submissions[key]){
+
+                let li=
+                document.createElement("li");
+
+                li.className="remind";
+
+                li.innerText=
+                `${student} 尚未繳交【${a.name}】`;
+
+                ul.appendChild(li);
+            }
+        });
+
+    });
+}
+
+renderStudents();
+renderAssignments();
+renderAttendance();
+renderHomework();
+
+</script>
+
+</body>
+</html>
