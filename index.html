@@ -1,679 +1,164 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>作業管理系統 V3</title>
-
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:"Microsoft JhengHei",sans-serif;
-}
-
-body{
-display:flex;
-background:#f5f6fa;
-}
-
-.sidebar{
-width:220px;
-height:100vh;
-background:#2563eb;
-color:white;
-position:fixed;
-padding:20px;
-}
-
-.sidebar h2{
-margin-bottom:25px;
-font-size:22px;
-}
-
-.sidebar button{
-width:100%;
-padding:12px;
-margin-bottom:10px;
-border:none;
-background:transparent;
-color:white;
-text-align:left;
-cursor:pointer;
-border-radius:6px;
-}
-
-.sidebar button:hover{
-background:rgba(255,255,255,0.2);
-}
-
-.main{
-margin-left:220px;
-padding:25px;
-width:100%;
-}
-
-.page{
-display:none;
-}
-
-.active{
-display:block;
-}
-
-.cards{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-gap:15px;
-margin-bottom:20px;
-}
-
-.card{
-background:white;
-padding:20px;
-border-radius:10px;
-box-shadow:0 2px 8px rgba(0,0,0,.1);
-}
-
-.card h3{
-color:#555;
-font-size:16px;
-}
-
-.card p{
-font-size:32px;
-font-weight:bold;
-margin-top:10px;
-}
-
-.section{
-background:white;
-padding:20px;
-border-radius:10px;
-margin-bottom:20px;
-box-shadow:0 2px 8px rgba(0,0,0,.1);
-}
-
-input,
-textarea{
-width:100%;
-padding:10px;
-margin-top:8px;
-margin-bottom:10px;
-border:1px solid #ddd;
-border-radius:6px;
-}
-
-button.action{
-background:#2563eb;
-color:white;
-border:none;
-padding:10px 15px;
-cursor:pointer;
-border-radius:6px;
-}
-
-button.delete{
-background:#dc2626;
-color:white;
-border:none;
-padding:5px 8px;
-border-radius:5px;
-cursor:pointer;
-}
-
-button.submitBtn{
-background:#16a34a;
-color:white;
-border:none;
-padding:6px 10px;
-border-radius:6px;
-cursor:pointer;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:10px;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:10px;
-text-align:center;
-}
-
-ul{
-padding-left:20px;
-}
-
-.remind{
-color:red;
-font-weight:bold;
-}
-
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>作業與課堂點名綜合管理系統 - 獨立免安裝版</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://tailwindcss.com"></script>
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .modal-enter { animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.96) translateY(-8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .toast-slide-in { animation: toastSlide 0.3s ease-out forwards; }
+    @keyframes toastSlide {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
 </head>
-
-<body>
-
-<div class="sidebar">
-
-<h2>📚 作業管理系統</h2>
-
-<button onclick="showPage('dashboard')">📊 儀表板</button>
-
-<button onclick="showPage('students')">👨‍🎓 學生管理</button>
-
-<button onclick="showPage('assignments')">📝 作業管理</button>
-
-<button onclick="showPage('attendance')">✅ 點名管理</button>
-
-<button onclick="showPage('submission')">📄 繳交管理</button>
-
-<button onclick="showPage('reminder')">⚠️ 催繳管理</button>
-
-</div>
-
-<div class="main">
-
-<!-- Dashboard -->
-
-<div id="dashboard" class="page active">
-
-<h1>儀表板</h1>
-
-<br>
-
-<div class="cards">
-
-<div class="card">
-<h3>學生總數</h3>
-<p id="studentCount">0</p>
-</div>
-
-<div class="card">
-<h3>作業總數</h3>
-<p id="assignmentCount">0</p>
-</div>
-
-<div class="card">
-<h3>未繳交</h3>
-<p id="missingCount">0</p>
-</div>
-
-</div>
-
-</div>
-
-<!-- Students -->
-
-<div id="students" class="page">
-
-<div class="section">
-
-<h2>學生管理</h2>
-
-<textarea id="studentInput"
-placeholder="一行一位學生"></textarea>
-
-<button class="action"
-onclick="addStudents()">
-新增學生
-</button>
-
-<ul id="studentList"></ul>
-
-</div>
-
-</div>
-
-<!-- Assignments -->
-
-<div id="assignments" class="page">
-
-<div class="section">
-
-<h2>作業管理</h2>
-
-<input id="assignmentName"
-placeholder="作業名稱">
-
-<input type="date"
-id="dueDate">
-
-<button class="action"
-onclick="createAssignment()">
-新增作業
-</button>
-
-<ul id="assignmentList"></ul>
-
-</div>
-
-</div>
-
-<!-- Attendance -->
-
-<div id="attendance" class="page">
-
-<div class="section">
-
-<h2>點名管理</h2>
-
-<table>
-
-<thead>
-<tr>
-<th>學生</th>
-<th>出席</th>
-</tr>
-</thead>
-
-<tbody id="attendanceBody"></tbody>
-
-</table>
-
-</div>
-
-</div>
-
-<!-- Submission -->
-
-<div id="submission" class="page">
-
-<div class="section">
-
-<h2>作業繳交管理</h2>
-
-<table>
-
-<thead>
-
-<tr>
-<th>學生</th>
-<th>作業</th>
-<th>狀態</th>
-</tr>
-
-</thead>
-
-<tbody id="submissionBody"></tbody>
-
-</table>
-
-</div>
-
-</div>
-
-<!-- Reminder -->
-
-<div id="reminder" class="page">
-
-<div class="section">
-
-<h2>催繳管理</h2>
-
-<button class="action"
-onclick="generateReminder()">
-產生催繳名單
-</button>
-
-<ul id="reminderList"></ul>
-
-</div>
-
-</div>
-
-</div>
-
-<script>
-
-let students =
-JSON.parse(localStorage.getItem("students")) || [];
-
-let assignments =
-JSON.parse(localStorage.getItem("assignments")) || [];
-
-let submissions =
-JSON.parse(localStorage.getItem("submissions")) || {};
-
-function saveData(){
-
-localStorage.setItem(
-"students",
-JSON.stringify(students)
-);
-
-localStorage.setItem(
-"assignments",
-JSON.stringify(assignments)
-);
-
-localStorage.setItem(
-"submissions",
-JSON.stringify(submissions)
-);
-
-updateDashboard();
-
-}
-
-function showPage(id){
-
-document
-.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
-
-document
-.getElementById(id)
-.classList.add("active");
-
-}
-
-function addStudents(){
-
-let list =
-document.getElementById(
-"studentInput"
-).value
-.split("\n")
-.map(x=>x.trim())
-.filter(x=>x!="");
-
-students.push(...list);
-
-document.getElementById(
-"studentInput"
-).value="";
-
-saveData();
-
-renderStudents();
-renderAttendance();
-renderSubmission();
-
-}
-
-function renderStudents(){
-
-let ul =
-document.getElementById(
-"studentList"
-);
-
-ul.innerHTML="";
-
-students.forEach((student,index)=>{
-
-ul.innerHTML += `
-<li>
-${student}
-<button
-class="delete"
-onclick="deleteStudent(${index})">
-刪除
-</button>
-</li>
-`;
-
-});
-
-}
-
-function deleteStudent(index){
-
-students.splice(index,1);
-
-saveData();
-
-renderStudents();
-renderAttendance();
-renderSubmission();
-
-}
-
-function createAssignment(){
-
-let name =
-document.getElementById(
-"assignmentName"
-).value;
-
-let due =
-document.getElementById(
-"dueDate"
-).value;
-
-if(!name)return;
-
-assignments.push({
-name:name,
-due:due
-});
-
-document.getElementById(
-"assignmentName"
-).value="";
-
-saveData();
-
-renderAssignments();
-renderSubmission();
-
-}
-
-function renderAssignments(){
-
-let ul =
-document.getElementById(
-"assignmentList"
-);
-
-ul.innerHTML="";
-
-assignments.forEach((a,index)=>{
-
-ul.innerHTML += `
-<li>
-${a.name}
-(${a.due})
-<button
-class="delete"
-onclick="deleteAssignment(${index})">
-刪除
-</button>
-</li>
-`;
-
-});
-
-}
-
-function deleteAssignment(index){
-
-assignments.splice(index,1);
-
-saveData();
-
-renderAssignments();
-renderSubmission();
-
-}
-
-function renderAttendance(){
-
-let body =
-document.getElementById(
-"attendanceBody"
-);
-
-body.innerHTML="";
-
-students.forEach(student=>{
-
-body.innerHTML += `
-<tr>
-<td>${student}</td>
-<td>
-<input type="checkbox">
-</td>
-</tr>
-`;
-
-});
-
-}
-
-function renderSubmission(){
-
-let body =
-document.getElementById(
-"submissionBody"
-);
-
-body.innerHTML="";
-
-students.forEach(student=>{
-
-assignments.forEach(a=>{
-
-let key =
-student + "_" + a.name;
-
-let status =
-submissions[key];
-
-body.innerHTML += `
-<tr>
-
-<td>${student}</td>
-
-<td>${a.name}</td>
-
-<td>
-
-<button
-class="submitBtn"
-onclick="
-toggleSubmit(
-'${student}',
-'${a.name}'
-)">
-${status ?
-'已繳交'
-:
-'未繳交'}
-</button>
-
-</td>
-
-</tr>
-`;
-
-});
-
-});
-
-updateDashboard();
-
-}
-
-function toggleSubmit(
-student,
-assignment
-){
-
-let key =
-student + "_" + assignment;
-
-submissions[key] =
-!submissions[key];
-
-saveData();
-
-renderSubmission();
-
-}
-
-function generateReminder(){
-
-let ul =
-document.getElementById(
-"reminderList"
-);
-
-ul.innerHTML="";
-
-students.forEach(student=>{
-
-assignments.forEach(a=>{
-
-let key =
-student + "_" + a.name;
-
-if(!submissions[key]){
-
-ul.innerHTML += `
-<li class="remind">
-${student}
-未繳交
-${a.name}
-</li>
-`;
-
-}
-
-});
-
-});
-
-}
-
-function updateDashboard(){
-
-document.getElementById(
-"studentCount"
-).innerText =
-students.length;
-
-document.getElementById(
-"assignmentCount"
-).innerText =
-assignments.length;
-
-let missing = 0;
-
-students.forEach(student=>{
-
-assignments.forEach(a=>{
-
-let key =
-student+"_"+a.name;
-
-if(!submissions[key])
-missing++;
-
-});
-
-});
-
-document.getElementById(
-"missingCount"
-).innerText =
-missing;
-
-}
-
-renderStudents();
-renderAssignments();
-renderAttendance();
-renderSubmission();
-updateDashboard();
-
-</script>
-
-</body>
-</html>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+  <!-- 全局導覽列 -->
+  <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <span class="text-2xl">🎓</span>
+        <div>
+          <h1 class="text-lg font-bold tracking-wide">作業與課堂點名綜合管理系統</h1>
+          <p class="text-xs text-indigo-200">純前端 Vanilla JS 免安裝版 · 本地儲存安全無虞</p>
+        </div>
+      </div>
+      <!-- 頁籤切換鈕 -->
+      <nav class="flex bg-indigo-700 p-1 rounded-lg text-sm font-medium">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-1.5 rounded-md bg-white text-indigo-700 shadow-sm transition">儀表板</button>
+        <button onclick="switchTab('students')" id="nav-students" class="px-4 py-1.5 rounded-md hover:text-white text-indigo-200 transition">學生管理</button>
+        <button onclick="switchTab('assignments')" id="nav-assignments" class="px-4 py-1.5 rounded-md hover:text-white text-indigo-200 transition">作業發佈</button>
+        <button onclick="switchTab('submissions')" id="nav-submissions" class="px-4 py-1.5 rounded-md hover:text-white text-indigo-200 transition text-left">線上評分</button>
+        <button onclick="switchTab('reminders')" id="nav-reminders" class="px-4 py-1.5 rounded-md hover:text-white text-indigo-200 transition">智慧催繳</button>
+        <button onclick="switchTab('rollcall')" id="nav-rollcall" class="px-4 py-1.5 rounded-md hover:text-white text-indigo-200 transition flex items-center gap-1">📋 課堂點名</button>
+      </nav>
+      <!-- 資料重設與匯出 -->
+      <div class="flex items-center space-x-2 text-xs">
+        <button onclick="exportSystemData()" class="bg-indigo-500 hover:bg-indigo-400 px-2.5 py-1.5 rounded transition">備份匯出</button>
+        <button onclick="triggerImportClick()" class="bg-indigo-500 hover:bg-indigo-400 px-2.5 py-1.5 rounded transition">還原資料</button>
+        <input type="file" id="importFile" class="hidden" accept=".json" onchange="importSystemData(event)">
+        <button onclick="resetSystemData()" class="bg-rose-500 hover:bg-rose-400 px-2.5 py-1.5 rounded transition">清除重設</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主內容容器 -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
+
+    <!-- 1. 儀表板頁籤 -->
+    <section id="tab-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div><p class="text-sm text-slate-500 font-medium">全班學生人數</p><h3 id="stat-students-count" class="text-3xl font-bold mt-1 text-slate-800">0</h3></div>
+          <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-xl font-bold">👥</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div><p class="text-sm text-slate-500 font-medium">作業發佈總數</p><h3 id="stat-assignments-count" class="text-3xl font-bold mt-1 text-slate-800">0</h3></div>
+          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xl font-bold">📝</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div><p class="text-sm text-slate-500 font-medium">總點名工作階段</p><h3 id="stat-rollcall-count" class="text-3xl font-bold mt-1 text-slate-800">0</h3></div>
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xl font-bold">📅</div>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
+          <div><p class="text-sm text-slate-500 font-medium">全學期平均出席率</p><h3 id="stat-attendance-rate" class="text-3xl font-bold mt-1 text-slate-800">100%</h3></div>
+          <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center text-xl font-bold">📊</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- 作業即時動態 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span>📝</span>目前作業進行狀態</h2>
+          <div id="dashboard-assignment-list" class="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+            <!-- 動態插入 -->
+          </div>
+        </div>
+        <!-- 點名即時動態與扣考預警 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col justify-between">
+          <div>
+            <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><span>⚠️</span>出勤關懷預警中心 (缺席達 3 次以上)</h2>
+            <div id="dashboard-warning-list" class="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+              <!-- 動態預警名單 -->
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+            <button onclick="switchTab('rollcall')" class="w-full bg-indigo-50 text-indigo-600 font-medium py-2 rounded-lg text-sm hover:bg-indigo-100 transition text-center">前往發起今日點名 →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 學生管理頁籤 -->
+    <section id="tab-students" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 批次新增表單 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-4">
+          <h2 class="text-base font-bold text-slate-800">⚡ 批次名單多行導入</h2>
+          <p class="text-xs text-slate-500">可直接複製 Excel/Word 中的學生名單欄位並在此貼上。格式支援空白、Tab 或逗號分隔。例如：<br><code class="bg-slate-50 p-1 block mt-1 text-indigo-600 rounded">S001 張小明 ClassA min@test.com<br>S002 李大華 ClassA hwa@test.com</code></p>
+          <textarea id="student-batch-input" rows="8" class="w-full border border-slate-200 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500" placeholder="請在此貼上學生資料..."></textarea>
+          <div class="flex gap-2">
+            <button onclick="parseBatchStudents()" class="flex-1 bg-indigo-600 text-white font-medium py-2 rounded-lg text-sm hover:bg-indigo-700 transition">解析並匯入</button>
+            <button onclick="clearStudentInput()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded-lg text-sm transition">清空</button>
+          </div>
+        </div>
+
+        <!-- 學生全名冊清單 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 lg:col-span-2 flex flex-col">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h2 class="text-base font-bold text-slate-800">👥 全班學生名冊 (<span id="student-list-count">0</span>人)</h2>
+            <button onclick="exportStudentsCSV()" class="text-xs text-indigo-600 border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg font-medium transition">匯出學生名冊 CSV</button>
+          </div>
+          <div class="overflow-x-auto flex-1 border border-slate-100 rounded-lg">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-100">
+                  <th class="p-3">學號</th>
+                  <th class="p-3">姓名</th>
+                  <th class="p-3">班級</th>
+                  <th class="p-3">Email</th>
+                  <th class="p-3 text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody id="student-table-body" class="divide-y divide-slate-100">
+                <!-- 動態載入 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 作業發佈頁籤 -->
+    <section id="tab-assignments" class="hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 出作業表單 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 space-y-4 h-fit">
+          <h2 class="text-base font-bold text-slate-800">📌 出新作業表單</h2>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">作業名稱 *</label>
+            <input type="text" id="assign-title" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-500" placeholder="例如：第二次程式作業 - 迴圈應用">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">作業說明</label>
+            <textarea id="assign-desc" rows="3" class="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:outline-none focus:border-indigo-500" placeholder="請輸入作業要求..."></textarea>
+          </div>
+          <div>
